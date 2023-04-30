@@ -1,23 +1,26 @@
 #!/bin/bash
 set -ou pipefail
 set -o nounset
-
-export URL_TO_TEST=$1
+## Author: WoodProgrammer
+## Usage: ./main.sh 
 export BASE_PATH=$(pwd)
-
-export SLACK_WEBHOOK_URL=$(yq e '.slack.webhook_url' config.yaml)
+## reads from the yaml file, with this way we can easily read the 
+## config data from a configmap instead of using environment variables.
 export THRESHOLD=$(yq e '.network.threshold' config.yaml)
-
-IFS=$'\n\t'
+export URL_TO_TEST=$(yq e '.network.url' config.yaml)
+export SLACK_WEBHOOK_URL=$(yq e '.slack.webhook_url' config.yaml)
 
 trap ctrl_c INT
 
 ctrl_c(){
+    ## Trap function to use in the future any kind of interruption
     echo "ctrl+c received closing system"
     exit 1
 }
 
 cecho (){
+
+     ## colored output function
     BLACK='\033[1;30m'
 	RED='\033[1;31m'
 	GREEN='\033[1;32m'
@@ -38,27 +41,29 @@ call_slack(){
 create_load(){
 
     regex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
+    ## check with the regex whether passed URL compatible with RFC standarts 
 
-    while true
+    while true ## infinite loop
     do
         if [[ $URL_TO_TEST =~ $regex ]]
         then 
             TIME_TO_RESPONSE=$(curl -w  "%{time_total}" --connect-timeout $THRESHOLD $URL_TO_TEST -o/dev/null)
+            ## response time of the curl command to the target address
 
-            if [ "$?" -ne "0" ];
+            if [ "$?" -ne "0" ]; ## check the curl command properly worked properly 
             then
                 cecho "RED" "The request failed in threshold"
-                call_slack $URL_TO_TEST
+                call_slack $URL_TO_TEST ## call the slack
             else
                 cecho "BLUE" "All clear ${TIME_TO_RESPONSE}"
             fi
         
         else
-            cecho "RED" "Link not valid:: https://site.co"
+            cecho "RED" "Link not valid:: https://site.co" 
             exit 1
         fi
     done
 
 }
 
-create_load
+create_load ## call the load functions
