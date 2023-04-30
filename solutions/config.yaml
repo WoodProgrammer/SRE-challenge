@@ -1,0 +1,5 @@
+slack:
+  webhook_url: https://SLACK_HOST/webhook/
+
+network:
+  threshold: 1
